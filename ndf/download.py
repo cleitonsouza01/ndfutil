@@ -10,9 +10,6 @@ import holidays
 import requests as requests
 from loguru import logger
 
-# from datamining import tradition_calc
-from ndf.datamining import tradition_calc
-# from table import Table
 from ndf.table import Table
 from scrapy.http import TextResponse
 
