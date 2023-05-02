@@ -23,6 +23,11 @@ def is_weekday(date):
     return result
 
 
+def is_weekend(date):
+    weekno = date.weekday()
+    return True if weekno >= 5 else False
+
+
 def is_holiday(date):
     us_holidays = holidays.NYSE()
     br_holidays = holidays.BR()
@@ -30,6 +35,14 @@ def is_holiday(date):
         return True
     else:
         return False
+
+
+def get_last_business_day(test_date):
+    test_date = test_date - timedelta(days=1)
+    while is_weekend(test_date) or is_holiday(test_date):
+        test_date = test_date - timedelta(days=1)
+
+    return test_date
 
 
 #####################
