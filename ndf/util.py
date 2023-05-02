@@ -37,8 +37,8 @@ def is_holiday(date):
         return False
 
 
-def get_last_business_day(test_date):
-    test_date = test_date - timedelta(days=1)
+def get_last_business_day(test_date=None):
+    test_date = test_date - timedelta(days=1) if test_date else datetime.now()
     while is_weekend(test_date) or is_holiday(test_date):
         test_date = test_date - timedelta(days=1)
 
