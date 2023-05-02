@@ -1,9 +1,15 @@
 import re
 from datetime import date, datetime, timedelta
 import holidays
-import joblib
-from loguru import logger
-from numerize import numerize
+import os
+
+
+# Setup file name
+def get_cache_filename(source, date=None):
+    today_date = datetime.now().strftime('%Y-%m-%d') if date is None else date
+    file = f"{source}_{today_date}.pkl"
+    file_with_path = os.path.join(os.getcwd() + '\\DATA\\', file)
+    return file_with_path
 
 
 def is_weekday(date):
@@ -67,4 +73,3 @@ def human_format(num):
         num /= 1000.0
     # add more suffixes if you need them
     return '%.2f%s' % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
-

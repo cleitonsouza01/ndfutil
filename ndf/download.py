@@ -13,7 +13,7 @@ from loguru import logger
 from ndf.table import Table
 from scrapy.http import TextResponse
 
-logger.add(sys.stderr, format="{time} {level} {message}", filter="my_module", level="DEBUG")
+logger.add(sys.stderr, format="{time} {level} {message}", filter="my_module")
 # logger.add(sys.stdout, colorize=True, format="<green>{time}</green> <level>{message}</level>")
 logger.add("ndfdownload.log", rotation="30 MB")
 
