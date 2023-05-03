@@ -17,7 +17,7 @@ class datamining:
 
     ##########################################
     # TRADITION CALCS
-    def tradition_calcs(picklefile):
+    def tradition_calcs(self, picklefile):
         logger.info('TRADITION Data mining starting')
         logger.debug(f'Opening {picklefile}')
         df_tradition = joblib.load(picklefile)
@@ -139,7 +139,7 @@ class datamining:
 
     ##########################################
     # TULLETPREBON CALCS
-    def tulletprebon_calcs(picklefile):
+    def tulletprebon_calcs(self, picklefile):
         logger.info('TULLET PREBON calcs starting')
         logger.info(f'Opening {picklefile}')
         df = joblib.load(picklefile)
@@ -312,7 +312,7 @@ class datamining:
 
     ##########################################
     # GFI CALCS
-    def gfi_calcs(picklefile):
+    def gfi_calcs(self, picklefile):
         logger.info('GFI calcs starting')
         logger.info(f'Opening {picklefile}')
         df_gfi = joblib.load(picklefile)
@@ -425,7 +425,7 @@ class datamining:
 
     ##########################################
     # BGC CALCS
-    def bgc_calcs(picklefile):
+    def bgc_calcs(self, picklefile):
         logger.info('BGC calcs starting')
         logger.info(f'Opening {picklefile}')
         df_bgc = joblib.load(picklefile)
