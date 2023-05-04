@@ -8,7 +8,7 @@ import os
 def get_cache_filename(source, date=None):
     today_date = datetime.now().strftime('%Y-%m-%d') if date is None else date
     file = f"{source}_{today_date}.pkl"
-    file_with_path = os.path.join(os.getcwd() + '\\DATA\\', file)
+    file_with_path = os.path.join(os.getcwd() + os.sep + 'DATA' + os.sep, file)
     return file_with_path
 
 
