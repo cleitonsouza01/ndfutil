@@ -6,17 +6,13 @@ import sys
 
 import pandas as pd
 import joblib
-import holidays
 import requests as requests
 from loguru import logger
 
 from ndf.table import Table
 from scrapy.http import TextResponse
 
-logger.add(sys.stderr, format="{time} {level} {message}", filter="my_module")
-# logger.add(sys.stdout, colorize=True, format="<green>{time}</green> <level>{message}</level>")
-logger.add("ndfdownload.log", rotation="30 MB")
-
+from ndf.util import is_weekday, is_yesterday_weekday, is_holiday, is_weekend
 
 class download:
     def __init__(self):
@@ -29,35 +25,6 @@ class download:
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) '
                           'Chrome/50.0.2661.102 Safari/537.36'}
-
-    def is_weekday(self, date):
-        weekno = date.weekday()
-        result = None
-        if weekno < 5:
-            result = True
-        else:
-            # 5 Sat, 6 Sun
-            result = False
-        return result
-
-    def is_holiday(self, date):
-        us_holidays = holidays.NYSE()
-        br_holidays = holidays.BR()
-        if (date.date() in us_holidays) or (date.date() in br_holidays):
-            return True
-        else:
-            return False
-
-    def is_yesterday_weekday(self):
-        yesterday = datetime.today() - timedelta(days=1)
-        weekno = yesterday.weekday()
-        result = None
-        if weekno < 5:
-            result = True
-        else:
-            # 5 Sat, 6 Sun
-            result = False
-        return result
 
     def _download(self, source, url, file_extention):
         # If not have cache directory create one
@@ -119,7 +86,7 @@ class download:
 
     def download_tradition(self, date=None):
         tradition_date_format = None
-        if self.is_yesterday_weekday():
+        if is_yesterday_weekday():
             tradition_date_format = datetime.today() - timedelta(days=1)
         else:
             tradition_date_format = datetime.today() - timedelta(days=3)
@@ -135,7 +102,7 @@ class download:
 
     def download_bgc(self, date=None):
         bgc_date_format = None
-        if self.is_yesterday_weekday():
+        if is_yesterday_weekday():
             bgc_date_format = datetime.today() - timedelta(days=1)
             bgc_date_format = bgc_date_format.strftime('%Y%m%d')
         else:
@@ -158,7 +125,7 @@ class download:
         date_format = '%Y-%m-%d'
         if date == None:
             gfi_date_format = None
-            if (self.is_yesterday_weekday()):
+            if (is_yesterday_weekday()):
                 gfi_date_format = datetime.today() - timedelta(days=1)
             else:
                 gfi_date_format = datetime.today() - timedelta(days=3)
@@ -180,15 +147,3 @@ class download:
         self.download_prebontullet()
         self.download_gfi()
 
-#
-# # Press the green button in the gutter to run the script.
-# if __name__ == '__main__':
-#     logger.info("Starting service")
-#
-#     n = ndf()
-#
-#     n.download_all()
-#
-#     print(f'n.TRADITION_result\n {n.TRADITION_result}')
-#
-# # See PyCharm help at https://www.jetbrains.com/help/pycharm/

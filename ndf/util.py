@@ -4,6 +4,38 @@ import holidays
 import os
 
 
+def is_weekday(date):
+    weekno = date.weekday()
+    result = None
+    if weekno < 5:
+        result = True
+    else:
+        # 5 Sat, 6 Sun
+        result = False
+    return result
+
+
+def is_holiday(date):
+    us_holidays = holidays.NYSE()
+    br_holidays = holidays.BR()
+    if (date.date() in us_holidays) or (date.date() in br_holidays):
+        return True
+    else:
+        return False
+
+
+def is_yesterday_weekday():
+    yesterday = datetime.today() - timedelta(days=1)
+    weekno = yesterday.weekday()
+    result = None
+    if weekno < 5:
+        result = True
+    else:
+        # 5 Sat, 6 Sun
+        result = False
+    return result
+
+
 # Setup file name
 def get_cache_filename(source, date=None):
     today_date = datetime.now().strftime('%Y-%m-%d') if date is None else date

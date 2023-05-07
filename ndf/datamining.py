@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta
 import joblib
 from loguru import logger
 from numerize import numerize
-from ndf.util import get_BMF_date
+from ndf.util import get_BMF_date, get_cache_filename
 
 
 class datamining:
@@ -15,12 +15,24 @@ class datamining:
         self.TULLETPREBON_result = None
         self.GFI_result = None
 
+    def open_cache_file(self, source=None, date=None):
+        if not source:
+            logger.error('Please specify filename SOURCE to open')
+            return
+        if not date:
+            ret = get_cache_filename(source)
+        else:
+            ret = get_cache_filename(source, date)
+
+        return ret
+
     ##########################################
     # TRADITION CALCS
-    def tradition_calcs(self, picklefile):
+    def tradition_calcs(self, date=None):
         logger.info('TRADITION Data mining starting')
-        logger.debug(f'Opening {picklefile}')
-        df_tradition = joblib.load(picklefile)
+        cache_filename = get_cache_filename('tradition') if not date else get_cache_filename('tradition', date)
+        logger.debug(f'Opening {cache_filename}')
+        df_tradition = joblib.load(cache_filename)
         if df_tradition.empty:
             logger.info('TRADITION FILE EMPTY ***')
             return None
@@ -139,10 +151,11 @@ class datamining:
 
     ##########################################
     # TULLETPREBON CALCS
-    def tulletprebon_calcs(self, picklefile):
+    def tulletprebon_calcs(self, date=None):
         logger.info('TULLET PREBON calcs starting')
-        logger.info(f'Opening {picklefile}')
-        df = joblib.load(picklefile)
+        cache_filename = get_cache_filename('tulletprebon') if not date else get_cache_filename('tulletprebon', date)
+        logger.debug(f'Opening {cache_filename}')
+        df = joblib.load(cache_filename)
         if df.empty:
             logger.info('TULLET PREBON FILE EMPTY ***')
             return None
