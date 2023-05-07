@@ -18,7 +18,7 @@ logger.add(sys.stderr, format="{time} {level} {message}", filter="my_module")
 logger.add("ndfdownload.log", rotation="30 MB")
 
 
-class ndf:
+class download:
     def __init__(self):
         self.year_size = 325
         self.data_dir_name = 'DATA'
