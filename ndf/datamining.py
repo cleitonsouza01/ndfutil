@@ -55,7 +55,7 @@ class datamining:
         # TYPES CONVERTION
         df_tradition = df_tradition.astype({'Volume': 'float'})
 
-        # print('df describe\n', df_tradition.describe())
+        # ##print('df describe\n', df_tradition.describe())
 
         ##########################################
         # FILTERS FOR TRADITION
@@ -69,19 +69,19 @@ class datamining:
         BMF2_DAYS = 9999
         BMF3_DAYS = 9999
 
-        # print('before', df_tradition)
+        # #print('before', df_tradition)
 
         # PTAX, TOMPTAX, BMF
         for index, row in df_tradition.iterrows():
             CLASS_STATUS = None
             description = row['Description']
-            # print(description)
+            # #print(description)
             try:
                 BRL = re.search(".*USDBRL_NDF.*", description)
             except:
                 continue
             if BRL:
-                # print(row['Description'])
+                # #print(row['Description'])
 
                 DAYS = description.split('. | _')[0].split('D')[0]
                 is_week = re.findall('.*W.*', DAYS)
@@ -96,7 +96,7 @@ class datamining:
                 BMF_DATE = get_BMF_date()
                 delta_bmf = BMF_DATE - expire_date
                 delta_bmf = int(delta_bmf.days)
-                # print(f'DAYS:{DAYS} | expire_date:{expire_date} | today:{today.day} | bmf:{BMF_DATE} | delta:{delta_bmf} ')
+                # #print(f'DAYS:{DAYS} | expire_date:{expire_date} | today:{today.day} | bmf:{BMF_DATE} | delta:{delta_bmf} ')
 
                 PTAX = True if DAYS == 0 else False
                 TOMPTAX = True if DAYS == 2 else False
@@ -130,8 +130,8 @@ class datamining:
         #####################
         # NUMBERS FOR HUMAN
 
-        print(df_tradition.columns.tolist())
-        print(df_tradition)
+        #print(df_tradition.columns.tolist())
+        #print(df_tradition)
         number_to_human = []
         for number in df_tradition['Volume']:
             converted = numerize.numerize(number)
@@ -143,7 +143,7 @@ class datamining:
         # NUMBERS FOR HUMAN
 
         df_tradition_summary = df_tradition.groupby('Class').sum()
-        print(df_tradition_summary)
+        #print(df_tradition_summary)
 
         number_to_human = []
         for number in df_tradition.groupby('Class').sum()['Volume']:
@@ -207,7 +207,7 @@ class datamining:
         BMF3_DAYS = 9999
 
         for index, row in df.iterrows():
-            # print(row['Description'], end='')
+            # #print(row['Description'], end='')
             description = row['Description']
             BRL = re.search(".*BRL.*", description)
             NDF = re.search(".*NDF.*", description)
@@ -218,7 +218,7 @@ class datamining:
                 CLASS_STATUS = ''
 
                 DAYS = (description.split('. | _')[0].split('D')[0])
-                # print(f"{DAYS} {description.split('. | _')[0].split('D')}")
+                # #print(f"{DAYS} {description.split('. | _')[0].split('D')}")
                 DAYS = int(DAYS) if DAYS.isnumeric() else 0
                 df.at[index, "Days"] = DAYS
 
@@ -236,7 +236,7 @@ class datamining:
                     BMF3_DAYS = DAYS
 
         for index, row in df.iterrows():
-            # print(row['Description'], end='')
+            # #print(row['Description'], end='')
             description = row['Description']
             BRL = re.search(".*BRL.*", description)
             NDF = re.search(".*NDF.*", description)
@@ -251,7 +251,7 @@ class datamining:
                 CLASS_STATUS = ''
 
                 DAYS = (description.split('. | _')[0].split('D')[0])
-                # print(f"{DAYS} {description.split('. | _')[0].split('D')}")
+                # #print(f"{DAYS} {description.split('. | _')[0].split('D')}")
                 DAYS = int(DAYS) if DAYS.isnumeric() else 0
                 df.at[index, "Days"] = DAYS if DAYS > 0 else 0
 
@@ -293,8 +293,8 @@ class datamining:
                     # b = datetime.strptime(batch_date, date_format)
                     # MATURING_DAYS = a - b
 
-                    # print(f"Days to maturing")
-            # print_color(CLASS_STATUS)
+                    # #print(f"Days to maturing")
+            # #print_color(CLASS_STATUS)
             df.at[index, "Class"] = CLASS_STATUS
 
             if CLASS_STATUS == 'BROKEN' and DAYS == 0:
@@ -306,7 +306,8 @@ class datamining:
             elif CLASS_STATUS == 'BROKEN' and DAYS == BMF3_DAYS:
                 df.at[index, "Class"] = 'BMF2'
             if CLASS_STATUS == 'BROKEN':
-                print(f'DAYS:{DAYS} BMF1:{BMF1_DAYS}\nDAYS:{DAYS} BMF2:{BMF2_DAYS}\nDAYS:{DAYS} BMF3:{BMF3_DAYS}\n')
+                pass
+                #print(f'DAYS:{DAYS} BMF1:{BMF1_DAYS}\nDAYS:{DAYS} BMF2:{BMF2_DAYS}\nDAYS:{DAYS} BMF3:{BMF3_DAYS}\n')
 
         #####################
         # NUMBERS FOR HUMAN
@@ -390,13 +391,13 @@ class datamining:
         for index, row in df_gfi.iterrows():
             CLASS_STATUS = None
             description = row['Description']
-            # print(description)
+            # #print(description)
             try:
                 BRL = re.search(".*USDBRL NDF.*", description)
             except:
                 continue
             if BRL:
-                print(row['Description'])
+                #print(row['Description'])
 
                 PTAX = re.search(".*PTX.*", description)
                 TOMPTAX = re.search(".*TOM.*", description)
@@ -421,7 +422,7 @@ class datamining:
             if CLASS_STATUS:
                 df_gfi.at[index, "Class"] = CLASS_STATUS
 
-                print('CLASS: ', df_gfi.at[index, "Class"])
+                #print('CLASS: ', df_gfi.at[index, "Class"])
 
         # Resto BROKEN
         for index, row in df_gfi.iterrows():
@@ -431,7 +432,7 @@ class datamining:
                 CLASS_STATUS = None
                 BMF2 = re.search(".*BMF ROLL.*", description)
 
-                print('CLASS: ', df_gfi.at[index, "Class"])
+                ##print('CLASS: ', df_gfi.at[index, "Class"])
                 if BMF2:
                     CLASS_STATUS = "BMF2"
                     df_gfi.at[index, "Class"] = CLASS_STATUS
@@ -507,13 +508,13 @@ class datamining:
         for index, row in df_bgc.iterrows():
             CLASS_STATUS = None
             description = row['Description']
-            # print(description)
+            # #print(description)
             try:
                 BRL = re.search(".*USDBRL NDF.*", description)
             except:
                 continue
             if BRL:
-                print(row['Description'])
+                # #print(row['Description'])
 
                 PTAX = re.search(".*PTX.*", description)
                 TOMPTAX = re.search(".*TOM.*", description)
@@ -538,7 +539,7 @@ class datamining:
             if CLASS_STATUS:
                 df_bgc.at[index, "Class"] = CLASS_STATUS
 
-                print('CLASS: ', df_bgc.at[index, "Class"])
+                #print('CLASS: ', df_bgc.at[index, "Class"])
 
         # Resto BROKEN
         for index, row in df_bgc.iterrows():
@@ -548,7 +549,7 @@ class datamining:
                 CLASS_STATUS = None
                 BMF2 = re.search(".*BMF ROLL.*", description)
 
-                print('CLASS: ', df_bgc.at[index, "Class"])
+                #print('CLASS: ', df_bgc.at[index, "Class"])
                 if BMF2:
                     CLASS_STATUS = "BMF2"
                     df_bgc.at[index, "Class"] = CLASS_STATUS

@@ -93,21 +93,21 @@ def get_BMF_date(month=None, year=None):
     # 2nd BD: dt + 2 * BusinessDay()
     # 3rd BD: dt + 3 * BusinessDay()
 
-    # print(f'BMF calculated {BMF_date.date()}')
+    # #print(f'BMF calculated {BMF_date.date()}')
     # BMF_date = BMF_date + 2 * BusinessDay()
     # BMF_date = BMF_date + timedelta(days=1)
     count = 1
     while (not is_weekday(BMF_date) or is_holiday(BMF_date)) or count < 2:
         BMF_date = BMF_date + timedelta(days=1)
         count += 1
-    # print(f'BMF after weekday {BMF_date.date()}')
+    # #print(f'BMF after weekday {BMF_date.date()}')
 
     # while is_holiday(BMF_date):
-    #     print(f"{BMF_date.date()} is holiday")
+    #     #print(f"{BMF_date.date()} is holiday")
     #     #BMF_date = BMF_date + 1 * BusinessDay()
     #     BMF_date = BMF_date + timedelta(days=1)
 
-    # print(f'BMF after holiday {BMF_date.date()}')
+    # #print(f'BMF after holiday {BMF_date.date()}')
     return BMF_date
 
 
