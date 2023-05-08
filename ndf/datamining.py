@@ -1,10 +1,14 @@
 import re
 from datetime import date, datetime, timedelta
+from pathlib import Path
+
 import joblib
+import pandas
 from loguru import logger
 from numerize import numerize
-from ndf.util import get_BMF_date, get_cache_filename
 
+from ndf.util import get_BMF_date, get_cache_filename
+from ndf import download
 
 class datamining:
     def __init__(self):
@@ -29,9 +33,15 @@ class datamining:
     ##########################################
     # TRADITION CALCS
     def tradition_calcs(self, date=None):
-        logger.info('TRADITION Data mining starting')
-        cache_filename = get_cache_filename('tradition') if not date else get_cache_filename('tradition', date)
+        source = 'tradition'
+        logger.info(f'{source} calcs starting')
+        cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
         logger.debug(f'Opening {cache_filename}')
+        if not Path(cache_filename).is_file():
+            logger.debug(f'File not found, trying to download {source} {date}')
+            d = download.download()
+            d.download(source, date)
+
         df_tradition = joblib.load(cache_filename)
         if df_tradition.empty:
             logger.info('TRADITION FILE EMPTY ***')
@@ -152,10 +162,16 @@ class datamining:
     ##########################################
     # TULLETPREBON CALCS
     def tulletprebon_calcs(self, date=None):
-        logger.info('TULLET PREBON calcs starting')
-        cache_filename = get_cache_filename('tulletprebon') if not date else get_cache_filename('tulletprebon', date)
+        source = 'tulletprebon'
+        logger.info(f'{source} calcs starting')
+        cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
         logger.debug(f'Opening {cache_filename}')
-        df = joblib.load(cache_filename)
+        if not Path(cache_filename).is_file():
+            logger.debug(f'File not found, trying to download {source} {date}')
+            d = download.download()
+            d.download(source, date)
+
+        df = joblib.load(cache_filename) if Path(cache_filename).is_file() else pandas.DataFrame()
         if df.empty:
             logger.info('TULLET PREBON FILE EMPTY ***')
             return None
@@ -325,10 +341,17 @@ class datamining:
 
     ##########################################
     # GFI CALCS
-    def gfi_calcs(self, picklefile):
-        logger.info('GFI calcs starting')
-        logger.info(f'Opening {picklefile}')
-        df_gfi = joblib.load(picklefile)
+    def gfi_calcs(self, date=None):
+        source = 'gfi'
+        logger.info(f'{source} calcs starting')
+        cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
+        logger.debug(f'Opening {cache_filename}')
+        if not Path(cache_filename).is_file():
+            logger.debug(f'File not found, trying to download {source} {date}')
+            d = download.download()
+            d.download(source, date)
+
+        df_gfi = joblib.load(cache_filename)
         if df_gfi.empty:
             logger.info('GFI FILE EMPTY ***')
             return None
@@ -438,10 +461,17 @@ class datamining:
 
     ##########################################
     # BGC CALCS
-    def bgc_calcs(self, picklefile):
-        logger.info('BGC calcs starting')
-        logger.info(f'Opening {picklefile}')
-        df_bgc = joblib.load(picklefile)
+    def bgc_calcs(self, date=None):
+        source = 'bgc'
+        logger.info(f'{source} calcs starting')
+        cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
+        logger.debug(f'Opening {cache_filename}')
+        if not Path(cache_filename).is_file():
+            logger.debug(f'File not found, trying to download {source} {date}')
+            d = download.download()
+            d.download(source, date)
+
+        df_bgc = joblib.load(cache_filename)
         if df_bgc.empty:
             logger.warning('BGC FILE EMPTY ***')
             return None

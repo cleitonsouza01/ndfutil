@@ -4,11 +4,13 @@ from datetime import date, datetime, timedelta
 import os
 import sys
 
+import pandas
 import pandas as pd
 import joblib
 import requests as requests
 from loguru import logger
 
+import ndf.util
 from ndf.table import Table
 from scrapy.http import TextResponse
 
@@ -26,8 +28,9 @@ class download:
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) '
                           'Chrome/50.0.2661.102 Safari/537.36'}
 
-    def _download(self, source, url, file_extention):
+    def _download(self, source, url, file_extention, date=None):
         # If not have cache directory create one
+        logger.debug(f'Try download {source} from {url}')
         if not os.path.isdir(self.data_dir_name):
             import errno
             try:
@@ -39,9 +42,10 @@ class download:
                     raise
                 pass
         # Setup file name
-        today_date = datetime.now().strftime('%Y-%m-%d')
-        file = f"{source}_{today_date}.pkl"
-        cachefile_with_path = os.path.join(self.data_dir_name, file)
+        # today_date = datetime.now().strftime('%Y-%m-%d')
+        # file = f"{source}_{today_date}.pkl"
+        # cachefile_with_path = os.path.join(self.data_dir_name, file)
+        cachefile_with_path = ndf.util.get_cache_filename(source, date)
         cache_raw_file = f"{cachefile_with_path.replace('.pkl', '')}.{file_extention}"
 
         df = None
@@ -84,37 +88,59 @@ class download:
 
         return cachefile_with_path
 
+    def download(self, source, date=None):
+        if source == "tradition":
+            self.download_tradition(date)
+        elif source == "bgc":
+            self.download_bgc(date)
+        elif source == "tulletprebon":
+            self.download_prebontullet(date)
+        elif source == "gfi":
+            self.download_gfi(date)
+
     def download_tradition(self, date=None):
         tradition_date_format = None
-        if is_yesterday_weekday():
-            tradition_date_format = datetime.today() - timedelta(days=1)
+        date_format = '%Y-%m-%d'
+        if date:
+            tradition_date_format = datetime.strptime(date, date_format)
         else:
-            tradition_date_format = datetime.today() - timedelta(days=3)
+            if is_yesterday_weekday():
+                tradition_date_format = datetime.today() - timedelta(days=1)
+            else:
+                tradition_date_format = datetime.today() - timedelta(days=3)
 
         tradition_date_format = tradition_date_format.strftime('%Y%m%d')
 
         # https://www.traditionsef.com/dailyactivity/SEF16_MKTDATA_TFSU_20230123.csv
         URL_tradition = f"https://www.traditionsef.com/dailyactivity/SEF16_MKTDATA_TFSU_{tradition_date_format}.csv"
 
-        file = self._download('TRADITION', URL_tradition, 'csv')
+        file = self._download('TRADITION', URL_tradition, 'csv', date)
 
         return file
 
     def download_bgc(self, date=None):
         bgc_date_format = None
-        if is_yesterday_weekday():
-            bgc_date_format = datetime.today() - timedelta(days=1)
-            bgc_date_format = bgc_date_format.strftime('%Y%m%d')
+        date_format = '%Y-%m-%d'
+        if date:
+            bgc_date_format = datetime.strptime(date, date_format).strftime('%Y%m%d')
         else:
-            bgc_date_format = datetime.today() - timedelta(days=3)
-            bgc_date_format = bgc_date_format.strftime('%Y%m%d')
+            if is_yesterday_weekday():
+                bgc_date_format = datetime.today() - timedelta(days=1)
+                bgc_date_format = bgc_date_format.strftime('%Y%m%d')
+            else:
+                bgc_date_format = datetime.today() - timedelta(days=3)
+                bgc_date_format = bgc_date_format.strftime('%Y%m%d')
 
         # URL_BGC = f"http://dailyactprod.bgcsef.com/SEF/DailyAct/DailyAct_{bgc_date_format}-001.xls"
         URL_BGC = f"http://dailyactprod.bgcsef.com/SEF/DailyAct/DailyAct_{bgc_date_format}.xls"
 
-        df = self._download('BGC', URL_BGC, 'xls')
+        df = self._download('BGC', URL_BGC, 'xls', date)
 
     def download_prebontullet(self, date=None):
+        logger.debug(f'>>> {date}')
+        if date:
+            return None
+
         URL_tulletprebon = "https://www.tullettprebon.com/swap-execution-facility/daily-activity-summary.aspx"
 
         df = self._download('TULLETPREBON', URL_tulletprebon, 'html')
@@ -123,21 +149,21 @@ class download:
 
     def download_gfi(self, date=None):
         date_format = '%Y-%m-%d'
-        if date == None:
-            gfi_date_format = None
+        gfi_date_format = None
+        if date:
+            gfi_date_format = datetime.strptime(date, date_format).strftime('%Y-%m-%d')
+        else:
             if (is_yesterday_weekday()):
                 gfi_date_format = datetime.today() - timedelta(days=1)
             else:
                 gfi_date_format = datetime.today() - timedelta(days=3)
 
             gfi_date_format = gfi_date_format.strftime(date_format)
-        else:
-            gfi_date_format = datetime.strptime(date, date_format).strftime('%Y-%m-%d')
 
         # "http://www.gfigroup.com/doc/sef/marketdata/2023-01-20_daily_trade_data.xls"
         URL_GFI = f"http://www.gfigroup.com/doc/sef/marketdata/{gfi_date_format}_daily_trade_data.xls"
 
-        df = self._download('GFI', URL_GFI, 'xls')
+        df = self._download('GFI', URL_GFI, 'xls', date)
 
         return df
 
