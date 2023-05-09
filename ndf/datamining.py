@@ -10,6 +10,7 @@ from numerize import numerize
 from ndf.util import get_BMF_date, get_cache_filename
 from ndf import download
 
+
 class datamining:
     def __init__(self):
         self.year_size = 325
@@ -32,7 +33,7 @@ class datamining:
 
     ##########################################
     # TRADITION CALCS
-    def tradition_calcs(self, date=None):
+    def tradition_calcs(self, date=None, presentation=None):
         source = 'tradition'
         logger.info(f'{source} calcs starting')
         cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
@@ -40,7 +41,9 @@ class datamining:
         if not Path(cache_filename).is_file():
             logger.debug(f'File not found, trying to download {source} {date}')
             d = download.download()
-            d.download(source, date)
+            ret = d.download(source, date)
+            if not ret:
+                return None
 
         df_tradition = joblib.load(cache_filename)
         if df_tradition.empty:
@@ -130,8 +133,8 @@ class datamining:
         #####################
         # NUMBERS FOR HUMAN
 
-        #print(df_tradition.columns.tolist())
-        #print(df_tradition)
+        # print(df_tradition.columns.tolist())
+        # print(df_tradition)
         number_to_human = []
         for number in df_tradition['Volume']:
             converted = numerize.numerize(number)
@@ -143,7 +146,7 @@ class datamining:
         # NUMBERS FOR HUMAN
 
         df_tradition_summary = df_tradition.groupby('Class').sum()
-        #print(df_tradition_summary)
+        # print(df_tradition_summary)
 
         number_to_human = []
         for number in df_tradition.groupby('Class').sum()['Volume']:
@@ -157,11 +160,14 @@ class datamining:
         df_tradition_summary = df_tradition_summary[['Total for human', 'Total_Trade_Count']]
 
         logger.debug(f'TRADITION Summary ===>\n{df_tradition_summary}\n')
-        return df_tradition_summary
+        if presentation == 'raw':
+            return df_tradition
+        else:
+            return df_tradition_summary
 
     ##########################################
     # TULLETPREBON CALCS
-    def tulletprebon_calcs(self, date=None):
+    def tulletprebon_calcs(self, date=None, presentation=None):
         source = 'tulletprebon'
         logger.info(f'{source} calcs starting')
         cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
@@ -169,7 +175,9 @@ class datamining:
         if not Path(cache_filename).is_file():
             logger.debug(f'File not found, trying to download {source} {date}')
             d = download.download()
-            d.download(source, date)
+            ret = d.download(source, date)
+            if not ret:
+                return None
 
         df = joblib.load(cache_filename) if Path(cache_filename).is_file() else pandas.DataFrame()
         if df.empty:
@@ -307,7 +315,7 @@ class datamining:
                 df.at[index, "Class"] = 'BMF2'
             if CLASS_STATUS == 'BROKEN':
                 pass
-                #print(f'DAYS:{DAYS} BMF1:{BMF1_DAYS}\nDAYS:{DAYS} BMF2:{BMF2_DAYS}\nDAYS:{DAYS} BMF3:{BMF3_DAYS}\n')
+                # print(f'DAYS:{DAYS} BMF1:{BMF1_DAYS}\nDAYS:{DAYS} BMF2:{BMF2_DAYS}\nDAYS:{DAYS} BMF3:{BMF3_DAYS}\n')
 
         #####################
         # NUMBERS FOR HUMAN
@@ -338,11 +346,14 @@ class datamining:
         df_summary = df_summary[['Total for human', 'Num of Trades', 'Days', 'Total Notional Value']]
 
         logger.debug(f'TULLETPREBON Summary ===>\n{df_summary}\n')
-        return df_summary
+        if presentation == 'raw':
+            return df
+        else:
+            return df_summary
 
     ##########################################
     # GFI CALCS
-    def gfi_calcs(self, date=None):
+    def gfi_calcs(self, date=None, presentation=None):
         source = 'gfi'
         logger.info(f'{source} calcs starting')
         cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
@@ -350,7 +361,9 @@ class datamining:
         if not Path(cache_filename).is_file():
             logger.debug(f'File not found, trying to download {source} {date}')
             d = download.download()
-            d.download(source, date)
+            ret = d.download(source, date)
+            if not ret:
+                return None
 
         df_gfi = joblib.load(cache_filename)
         if df_gfi.empty:
@@ -397,10 +410,15 @@ class datamining:
             except:
                 continue
             if BRL:
-                #print(row['Description'])
+                # print(row['Description'])
 
                 PTAX = re.search(".*PTX.*", description)
                 TOMPTAX = re.search(".*TOM.*", description)
+
+                # BMF is always 2nd business day of the month
+                # BGC and GFI use the fixing date (last business day of the month)
+                # like the BMF date, example: 28/april is BMF because is fixing date of
+                # BMF date may/2snd
                 BMF = re.search(".*BMF.*", description)
                 # BMF3 ?
 
@@ -422,7 +440,7 @@ class datamining:
             if CLASS_STATUS:
                 df_gfi.at[index, "Class"] = CLASS_STATUS
 
-                #print('CLASS: ', df_gfi.at[index, "Class"])
+                # print('CLASS: ', df_gfi.at[index, "Class"])
 
         # Resto BROKEN
         for index, row in df_gfi.iterrows():
@@ -458,11 +476,14 @@ class datamining:
         df_gfi_summary = df_gfi_summary[['Total for human', 'Volume']]
 
         logger.debug(f'GFI _summary ===>\n{df_gfi_summary}\n')
-        return df_gfi_summary
+        if presentation == 'raw':
+            return df_gfi
+        else:
+            return df_gfi_summary
 
     ##########################################
     # BGC CALCS
-    def bgc_calcs(self, date=None):
+    def bgc_calcs(self, date=None, presentation=None):
         source = 'bgc'
         logger.info(f'{source} calcs starting')
         cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
@@ -470,7 +491,9 @@ class datamining:
         if not Path(cache_filename).is_file():
             logger.debug(f'File not found, trying to download {source} {date}')
             d = download.download()
-            d.download(source, date)
+            ret = d.download(source, date)
+            if not ret:
+                return None
 
         df_bgc = joblib.load(cache_filename)
         if df_bgc.empty:
@@ -539,7 +562,7 @@ class datamining:
             if CLASS_STATUS:
                 df_bgc.at[index, "Class"] = CLASS_STATUS
 
-                #print('CLASS: ', df_bgc.at[index, "Class"])
+                # print('CLASS: ', df_bgc.at[index, "Class"])
 
         # Resto BROKEN
         for index, row in df_bgc.iterrows():
@@ -549,7 +572,7 @@ class datamining:
                 CLASS_STATUS = None
                 BMF2 = re.search(".*BMF ROLL.*", description)
 
-                #print('CLASS: ', df_bgc.at[index, "Class"])
+                # print('CLASS: ', df_bgc.at[index, "Class"])
                 if BMF2:
                     CLASS_STATUS = "BMF2"
                     df_bgc.at[index, "Class"] = CLASS_STATUS
@@ -578,4 +601,7 @@ class datamining:
             df_bgc_summary = df_bgc_summary[['Total for human', 'Volume']]
 
         logger.debug(f'df_bgc_summary ===>\n{df_bgc_summary}\n')
-        return df_bgc_summary
+        if presentation == 'raw':
+            return df_bgc
+        else:
+            return df_bgc_summary

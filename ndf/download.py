@@ -49,54 +49,63 @@ class download:
         cache_raw_file = f"{cachefile_with_path.replace('.pkl', '')}.{file_extention}"
 
         df = None
-        try:
+
+        if pathlib.Path(cachefile_with_path).is_file():
             f = open(cachefile_with_path, 'rb')
             df = joblib.load(cachefile_with_path)
             logger.info(f'Loaded {source} DATA from cache {cachefile_with_path}')
-        except (IOError, OSError):
-            if file_extention == 'html':
-                logger.info(f'Downloading to {cache_raw_file} from {url}')
-                r = requests.get(url)
-                response = TextResponse(r.url, body=r.text, encoding="utf-8")
-                logger.debug("Convert HTML to pandas dataframe")
-                table = Table(response.xpath('(//table)[1]'))
-                tullet = table.as_dicts()
-                df = pd.DataFrame(tullet)
-                # Cache
-                joblib.dump(df, cachefile_with_path)
-                logger.info(f'{source} data success cached at {cachefile_with_path}')
-            else:
-                logger.info(f'Downloading to {cache_raw_file} from {url}')
-                r = requests.get(url, headers=self.headers, verify=False)
-                logger.info(f'download size: {len(r.content)} ')
-                with open(cache_raw_file, 'wb') as f:
-                    f.write(r.content)
-
-                if file_extention == 'csv':
-                    logger.debug("Convert CSV to pandas dataframe")
-                    df = pd.read_csv(cache_raw_file, sep='|')
-                    logger.debug("Creating cache...")
+        else:
+            try:
+                if file_extention == 'html':
+                    logger.info(f'Downloading to {cache_raw_file} from {url}')
+                    r = requests.get(url)
+                    response = TextResponse(r.url, body=r.text, encoding="utf-8")
+                    logger.debug("Convert HTML to pandas dataframe")
+                    table = Table(response.xpath('(//table)[1]'))
+                    tullet = table.as_dicts()
+                    df = pd.DataFrame(tullet)
+                    # Cache
                     joblib.dump(df, cachefile_with_path)
                     logger.info(f'{source} data success cached at {cachefile_with_path}')
+                else:
+                    logger.info(f'Downloading to {cache_raw_file} from {url}')
+                    r = requests.get(url, headers=self.headers, verify=False)
+                    file_size = len(r.content)
+                    logger.info(f'download size: {file_size} ')
+                    if file_size > 2000:
+                        with open(cache_raw_file, 'wb') as f:
+                            f.write(r.content)
 
-                elif file_extention == 'xls':
-                    logger.debug("Convert XLS to pandas dataframe")
-                    df = pd.read_excel(cache_raw_file)
-                    logger.debug("Creating cache...")
-                    joblib.dump(df, cachefile_with_path)
-                    logger.info(f'{source} data success cached at {cachefile_with_path}')
+                        if file_extention == 'csv':
+                            logger.debug("Convert CSV to pandas dataframe")
+                            df = pd.read_csv(cache_raw_file, sep='|')
+                            logger.debug("Creating cache...")
+                            joblib.dump(df, cachefile_with_path)
+                            logger.info(f'{source} data success cached at {cachefile_with_path}')
 
-        return cachefile_with_path
+                        elif file_extention == 'xls':
+                            logger.debug("Convert XLS to pandas dataframe")
+                            df = pd.read_excel(cache_raw_file)
+                            logger.debug("Creating cache...")
+                            joblib.dump(df, cachefile_with_path)
+                            logger.info(f'{source} data success cached at {cachefile_with_path}')
+                    else:
+                        logger.debug("File size too small, ignoring and returning false")
+                        df = None
+            except requests.exceptions.RequestException as e:
+                logger.error(e)
+
+        return df
 
     def download(self, source, date=None):
         if source == "tradition":
-            self.download_tradition(date)
+            return self.download_tradition(date)
         elif source == "bgc":
-            self.download_bgc(date)
+            return self.download_bgc(date)
         elif source == "tulletprebon":
-            self.download_prebontullet(date)
+            return self.download_prebontullet(date)
         elif source == "gfi":
-            self.download_gfi(date)
+            return self.download_gfi(date)
 
     def download_tradition(self, date=None):
         tradition_date_format = None
@@ -114,9 +123,12 @@ class download:
         # https://www.traditionsef.com/dailyactivity/SEF16_MKTDATA_TFSU_20230123.csv
         URL_tradition = f"https://www.traditionsef.com/dailyactivity/SEF16_MKTDATA_TFSU_{tradition_date_format}.csv"
 
-        file = self._download('TRADITION', URL_tradition, 'csv', date)
+        df = self._download('TRADITION', URL_tradition, 'csv', date)
 
-        return file
+        if isinstance(df, pd.DataFrame):
+            return True
+        else:
+            return False
 
     def download_bgc(self, date=None):
         bgc_date_format = None
@@ -136,8 +148,12 @@ class download:
 
         df = self._download('BGC', URL_BGC, 'xls', date)
 
+        if isinstance(df, pd.DataFrame):
+            return True
+        else:
+            return False
+
     def download_prebontullet(self, date=None):
-        logger.debug(f'>>> {date}')
         if date:
             return None
 
@@ -145,7 +161,10 @@ class download:
 
         df = self._download('TULLETPREBON', URL_tulletprebon, 'html')
 
-        return df
+        if isinstance(df, pd.DataFrame):
+            return True
+        else:
+            return False
 
     def download_gfi(self, date=None):
         date_format = '%Y-%m-%d'
@@ -165,11 +184,18 @@ class download:
 
         df = self._download('GFI', URL_GFI, 'xls', date)
 
-        return df
+        if isinstance(df, pd.DataFrame):
+            return True
+        else:
+            return False
 
     def download_all(self):
-        self.download_bgc()
-        self.download_tradition()
-        self.download_prebontullet()
-        self.download_gfi()
+        bgc = self.download_bgc()
+        tradition = self.download_tradition()
+        prebontullet = self.download_prebontullet()
+        gfi = self.download_gfi()
+        print('bgc ok') if bgc else print('bgc erro')
+        print('tradition ok') if tradition else print('tradition erro')
+        print('prebontullet ok') if prebontullet else print('prebontullet erro')
+        print('gfi ok') if gfi else print('gfi erro')
 
