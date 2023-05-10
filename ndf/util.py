@@ -60,15 +60,6 @@ def is_weekend(date):
     return True if weekno >= 5 else False
 
 
-def is_holiday(date):
-    us_holidays = holidays.NYSE()
-    br_holidays = holidays.BR()
-    if (date.date() in us_holidays) or (date.date() in br_holidays):
-        return True
-    else:
-        return False
-
-
 def get_last_business_day(test_date=None):
     test_date = test_date - timedelta(days=1) if test_date else datetime.now()
     while is_weekend(test_date) or is_holiday(test_date):
@@ -79,7 +70,9 @@ def get_last_business_day(test_date=None):
 
 #####################
 # GET BMF DATE
-
+# BMF
+# É o segundo dia util do mes seguinte. Feriados Brasileiros OU americanos não é dia util.
+# Quando dizemos BMF sempre quer dizer do mes seguinte, BMF2, BMF3, BMF4... é referente aos meses subsequentes
 def get_BMF_date(month=None, year=None):
     BMF_date = datetime.today()
     BMF_date = (BMF_date.replace(day=1) + timedelta(days=32)).replace(day=1)
