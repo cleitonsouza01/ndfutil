@@ -7,7 +7,7 @@ import pandas
 from loguru import logger
 from numerize import numerize
 
-from ndf.util import get_BMF_date, get_cache_filename
+from ndf.util import get_BMF_date, get_cache_filename, get_last_bd
 from ndf import download
 
 
@@ -365,43 +365,43 @@ class datamining:
             if not ret:
                 return None
 
-        df_gfi = joblib.load(cache_filename)
-        if df_gfi.empty:
+        df = joblib.load(cache_filename)
+        if df.empty:
             logger.info('GFI FILE EMPTY ***')
             return None
-        df_gfi.drop('Unnamed: 0', axis=1, inplace=True)
-        df_gfi.drop([0, 1, 2], axis=0, inplace=True)
-        df_gfi.reset_index(drop=True, inplace=True)
-        df_gfi.columns = df_gfi.iloc[0]
-        df_gfi.reset_index(drop=True, inplace=True)
-        df_gfi = df_gfi.rename(columns={'Contract Description': 'Description'})
-        df_gfi.drop(['Asset Class', 'Open', 'Low', 'High', 'Close', 'Block', 'Currency'], axis=1, inplace=True)
-        df_gfi = df_gfi[df_gfi['Volume'].notna()]
+        df.drop('Unnamed: 0', axis=1, inplace=True)
+        df.drop([0, 1, 2], axis=0, inplace=True)
+        df.reset_index(drop=True, inplace=True)
+        df.columns = df.iloc[0]
+        df.reset_index(drop=True, inplace=True)
+        df = df.rename(columns={'Contract Description': 'Description'})
+        df.drop(['Asset Class', 'Open', 'Low', 'High', 'Close', 'Block', 'Currency'], axis=1, inplace=True)
+        df = df[df['Volume'].notna()]
 
-        # df_gfi.drop([0], axis=0, inplace=True)
-        # df_gfi = df_gfi.rename(columns={'Instrument Description': 'Description'})
+        # df.drop([0], axis=0, inplace=True)
+        # df = df.rename(columns={'Instrument Description': 'Description'})
 
         # TYPES CONVERTION
-        # df_gfi = df_gfi.astype({'Volume':'float'})
+        # df = df.astype({'Volume':'float'})
         # %%
         ##########################################
         # FILTERS FOR GFI
         #
-        df_gfi = df_gfi[df_gfi.Description.str.contains(".*USDBRL NDF.*")]
-        df_gfi = df_gfi.reset_index(drop=True)
+        df = df[df.Description.str.contains(".*USDBRL NDF.*")]
+        df = df.reset_index(drop=True)
 
-        logger.debug(f'GFI before mining:\n{df_gfi}')
-        if df_gfi.empty:
+        logger.debug(f'GFI before mining:\n{df}')
+        if df.empty:
             return None
 
-        df_gfi['Source'] = 'GFI'
-        df_gfi['Class'] = None
+        df['Source'] = 'GFI'
+        df['Class'] = None
         BMF1_DAYS = 9999
         BMF2_DAYS = 9999
         BMF3_DAYS = 9999
 
         # PTAX, TOMPTAX, BMF
-        for index, row in df_gfi.iterrows():
+        for index, row in df.iterrows():
             CLASS_STATUS = None
             description = row['Description']
             # #print(description)
@@ -411,75 +411,58 @@ class datamining:
                 continue
             if BRL:
                 # print(row['Description'])
-
-                PTAX = re.search(".*PTX.*", description)
-                TOMPTAX = re.search(".*TOM.*", description)
-
-                # BMF is always 2nd business day of the month
-                # BGC and GFI use the fixing date (last business day of the month)
-                # like the BMF date, example: 28/april is BMF because is fixing date of
-                # BMF date may/2snd
-                BMF = re.search(".*BMF.*", description)
-                # BMF3 ?
-
-                # PTAX
-                if PTAX:
-                    CLASS_STATUS = "PTAX"
-                # TOMPTAX
-                elif TOMPTAX:
-                    CLASS_STATUS = "TOMPTAX"
-                    # BMF
-                elif BMF:
-                    CLASS_STATUS = "BMF"
-                    # BMF2 (2ND)
-
-                # #BMF3 (3RD)
-                # elif BMF3:
-                #     CLASS_STATUS="BMF3"
-
+                row_date = description.split(' ')[2]
+                row_date = datetime.strptime(row_date, "%d%b%Y")
+                today = datetime.today()
+                # BMF
+                if row_date == get_last_bd(row_date):
+                    # BMF 1
+                    print(f'{row_date.month} == {today.month}  |  {row_date} | {description}')
+                    if row_date.month == today.month:
+                        CLASS_STATUS = "BMF"
+                    elif row_date.month == today.month + 1:
+                        CLASS_STATUS = "BMF2"
+                    elif row_date.month == today.month + 2:
+                        CLASS_STATUS = "BMF3"
+                    elif row_date.month == today.month + 3:
+                        CLASS_STATUS = "BMF4"
+                    else:
+                        CLASS_STATUS = "BMFx"
             if CLASS_STATUS:
-                df_gfi.at[index, "Class"] = CLASS_STATUS
-
-                # print('CLASS: ', df_gfi.at[index, "Class"])
+                df.at[index, "Class"] = CLASS_STATUS
 
         # Resto BROKEN
-        for index, row in df_gfi.iterrows():
+        for index, row in df.iterrows():
             description = row['Description']
             BRL = re.search(".*BRL NDF.*", description)
             if BRL:
-                CLASS_STATUS = None
-                BMF2 = re.search(".*BMF ROLL.*", description)
-
-                ##print('CLASS: ', df_gfi.at[index, "Class"])
-                if BMF2:
-                    CLASS_STATUS = "BMF2"
-                    df_gfi.at[index, "Class"] = CLASS_STATUS
-
-                    # RESTO
-                elif not df_gfi.at[index, "Class"]:
+                if not df.at[index, "Class"]:
                     CLASS_STATUS = "BROKEN"
-                    df_gfi.at[index, "Class"] = CLASS_STATUS
+                    df.at[index, "Class"] = CLASS_STATUS
+
+        volume_sum = df['Volume'].sum()
+        df = df.append({'Volume': volume_sum, 'Class': 'TOTAL'}, ignore_index=True)
 
         #####################
         # NUMBERS FOR HUMAN
-        df_gfi_summary = df_gfi.groupby('Class').sum()
+        df_summary = df.groupby('Class').sum()
 
         number_to_human = []
-        for number in df_gfi.groupby('Class').sum()['Volume']:
+        for number in df.groupby('Class').sum()['Volume']:
             converted = numerize.numerize(number)
             number_to_human.append(converted)
 
-        df_gfi_summary['Total for human'] = number_to_human
+        df_summary['Total for human'] = number_to_human
 
         #####################
         # DATAFRAME SORT
-        df_gfi_summary = df_gfi_summary[['Total for human', 'Volume']]
+        df_summary = df_summary[['Total for human', 'Volume']]
 
-        logger.debug(f'GFI _summary ===>\n{df_gfi_summary}\n')
+        logger.debug(f'GFI _summary ===>\n{df_summary}\n')
         if presentation == 'raw':
-            return df_gfi
+            return df
         else:
-            return df_gfi_summary
+            return df_summary
 
     ##########################################
     # BGC CALCS
@@ -539,19 +522,10 @@ class datamining:
             if BRL:
                 # #print(row['Description'])
 
-                PTAX = re.search(".*PTX.*", description)
-                TOMPTAX = re.search(".*TOM.*", description)
                 BMF = re.search(".*BMF.*", description)
                 # BMF3 ?
 
-                # PTAX
-                if PTAX:
-                    CLASS_STATUS = "PTAX"
-                # TOMPTAX
-                elif TOMPTAX:
-                    CLASS_STATUS = "TOMPTAX"
-                    # BMF
-                elif BMF:
+                if BMF:
                     CLASS_STATUS = "BMF"
                     # BMF2 (2ND)
 

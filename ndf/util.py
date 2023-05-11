@@ -2,7 +2,7 @@ import re
 from datetime import date, datetime, timedelta
 import holidays
 import os
-from pandas._libs.tslibs.offsets import BDay
+from pandas._libs.tslibs.offsets import BDay, BMonthEnd
 
 
 def is_weekday(date):
@@ -114,9 +114,12 @@ def human_format(num):
     return '%.2f%s' % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
 
 
+get_last_bd = lambda date: date.replace(day=1) + BMonthEnd()
+
+
 def get_second_business_day(month=None, year=None):
-    month = int(month)
-    year = int(year)
+    month = int(month) if month else None
+    year = int(year) if year else None
     bdate = None
     if year:
         bdate = datetime.today().replace(year=year, month=month, day=1)
@@ -138,3 +141,5 @@ def get_second_business_day(month=None, year=None):
         bdate = bdate + BDay(1)
 
     return bdate
+
+
