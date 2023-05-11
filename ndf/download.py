@@ -29,6 +29,7 @@ class download:
                           'Chrome/50.0.2661.102 Safari/537.36'}
 
     def _download(self, source, url, file_extention, date=None):
+        source = source.lower()
         # If not have cache directory create one
         logger.debug(f'Try download {source} from {url}')
         if not os.path.isdir(self.data_dir_name):
