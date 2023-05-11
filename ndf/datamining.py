@@ -37,7 +37,7 @@ class datamining:
         source = 'tradition'
         logger.info(f'{source} calcs starting')
         cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
-        logger.debug(f'Opening {cache_filename}')
+        logger.debug(f'Opening CACHE FILE {cache_filename}')
         if not Path(cache_filename).is_file():
             logger.debug(f'File not found, trying to download {source} {date}')
             d = download.download()
@@ -171,7 +171,7 @@ class datamining:
         source = 'tulletprebon'
         logger.info(f'{source} calcs starting')
         cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
-        logger.debug(f'Opening {cache_filename}')
+        logger.debug(f'Opening CACHE FILE {cache_filename}')
         if not Path(cache_filename).is_file():
             logger.debug(f'File not found, trying to download {source} {date}')
             d = download.download()
@@ -357,7 +357,7 @@ class datamining:
         source = 'gfi'
         logger.info(f'{source} calcs starting')
         cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
-        logger.debug(f'Opening {cache_filename}')
+        logger.debug(f'Opening CACHE FILE {cache_filename}')
         if not Path(cache_filename).is_file():
             logger.debug(f'File not found, trying to download {source} {date}')
             d = download.download()
@@ -487,7 +487,7 @@ class datamining:
         source = 'bgc'
         logger.info(f'{source} calcs starting')
         cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
-        logger.debug(f'Opening {cache_filename}')
+        logger.debug(f'Opening CACHE FILE {cache_filename}')
         if not Path(cache_filename).is_file():
             logger.debug(f'File not found, trying to download {source} {date}')
             d = download.download()

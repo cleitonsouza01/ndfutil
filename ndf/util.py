@@ -2,6 +2,7 @@ import re
 from datetime import date, datetime, timedelta
 import holidays
 import os
+from pandas._libs.tslibs.offsets import BDay
 
 
 def is_weekday(date):
@@ -111,3 +112,29 @@ def human_format(num):
         num /= 1000.0
     # add more suffixes if you need them
     return '%.2f%s' % (num, ['', 'K', 'M', 'G', 'T', 'P'][magnitude])
+
+
+def get_second_business_day(month=None, year=None):
+    month = int(month)
+    year = int(year)
+    bdate = None
+    if year:
+        bdate = datetime.today().replace(year=year, month=month, day=1)
+    elif month and not year:
+        bdate = datetime.today().replace(month=month, day=1)
+    else:
+        bdate = datetime.today().replace(day=1)
+
+    # print(bdate)
+    if is_weekday(bdate):
+        if not is_holiday(bdate):
+            bdate = bdate + BDay(1)
+        else:
+            bdate = bdate + BDay(2)
+    else:
+        bdate = bdate + BDay(2)
+
+    while is_holiday(bdate):
+        bdate = bdate + BDay(1)
+
+    return bdate
