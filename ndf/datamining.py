@@ -423,7 +423,7 @@ class datamining:
                 # BMF
                 if row_date == get_last_bd(row_date):
                     # BMF 1
-                    print(f'{row_date.month} == {today.month}  |  {row_date} | {description}')
+                    # print(f'{row_date.month} == {today.month}  |  {row_date} | {description}')
                     if row_date.month == today.month:
                         CLASS_STATUS = "BMF"
                     elif row_date.month == today.month + 1:
