@@ -294,7 +294,7 @@ class datamining:
                         CLASS_STATUS = "GT 1 YEAR"
                         # MATURING (broken)
                 elif MATURING:
-                    CLASS_STATUS = "MATURING"
+                    CLASS_STATUS = "XP"
                     MATURING_DATE = re.findall("\d{4}-\d{2}-\d{2}", description)
                     MATURING_DATE = MATURING_DATE[0]
 
