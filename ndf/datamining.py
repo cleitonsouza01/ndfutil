@@ -4,6 +4,7 @@ from pathlib import Path
 
 import joblib
 import pandas
+from dateutil.relativedelta import relativedelta
 from loguru import logger
 from numerize import numerize
 
@@ -333,9 +334,6 @@ class datamining:
 
         df['Total for human'] = number_to_human
 
-        #####################
-        # NUMBERS FOR HUMAN
-
         df_summary = df.groupby('Class').sum()
 
         number_to_human = []
@@ -433,8 +431,8 @@ class datamining:
                     elif row_date.month == today.month + 3:
                         CLASS_STATUS = "BMF4"
                     else:
-                        month = row_date.month + 1
-                        CLASS_STATUS = f"BMF {month}/{row_date.year}"
+                        bmf = get_BMF_date(row_date)
+                        CLASS_STATUS = f"BMF {bmf.month}/{bmf.year}"
             if CLASS_STATUS:
                 df.at[index, "Class"] = CLASS_STATUS
 
@@ -547,8 +545,8 @@ class datamining:
                     elif row_date.month == today.month + 3:
                         CLASS_STATUS = "BMF4"
                     else:
-                        month = row_date.month + 1
-                        CLASS_STATUS = f"BMF {month}/{row_date.year}"
+                        bmf = get_BMF_date(row_date)
+                        CLASS_STATUS = f"BMF {bmf.month}/{bmf.year}"
             if CLASS_STATUS:
                 df.at[index, "Class"] = CLASS_STATUS
 
@@ -584,119 +582,3 @@ class datamining:
             return df
         else:
             return df_summary
-
-    ##########################################
-    # BGC CALCS
-    # def bgc_calcs(self, date=None, presentation=None):
-    #     source = 'bgc'
-    #     logger.info(f'{source} calcs starting')
-    #     cache_filename = get_cache_filename(source) if not date else get_cache_filename(source, date)
-    #     logger.debug(f'Opening CACHE FILE {cache_filename}')
-    #     if not Path(cache_filename).is_file():
-    #         logger.debug(f'File not found, trying to download {source} {date}')
-    #         d = download.download()
-    #         ret = d.download(source, date)
-    #         if not ret:
-    #             return None
-    #
-    #     df_bgc = joblib.load(cache_filename)
-    #     if df_bgc.empty:
-    #         logger.warning('BGC FILE EMPTY ***')
-    #         return None
-    #     # logger.debug(f'BGC DF: \n{df_bgc}')
-    #     df_bgc.drop('Unnamed: 0', axis=1, inplace=True)
-    #     df_bgc.drop([0, 1, 2], axis=0, inplace=True)
-    #     df_bgc.reset_index(drop=True, inplace=True)
-    #     df_bgc.columns = df_bgc.iloc[0]
-    #     df_bgc.reset_index(drop=True, inplace=True)
-    #     df_bgc = df_bgc.rename(columns={'InstrumentDescription': 'Description'})
-    #     df_bgc.drop(['Asset Class', 'Open', 'Low', 'High', 'Close', 'Block', 'Currency'], axis=1, inplace=True)
-    #     df_bgc = df_bgc[df_bgc['Volume'].notna()]
-    #
-    #     # df_bgc.drop([0], axis=0, inplace=True)
-    #     # df_bgc = df_bgc.rename(columns={'Instrument Description': 'Description'})
-    #
-    #     # TYPES CONVERTION
-    #     # df_bgc = df_bgc.astype({'Volume':'float'})
-    #
-    #     ##########################################
-    #     # FILTERS FOR GFI
-    #     #
-    #     df_bgc = df_bgc[df_bgc.Description.str.contains(".*USDBRL NDF.*")]
-    #     df_bgc = df_bgc.reset_index(drop=True)
-    #
-    #     df_bgc['Source'] = 'GFI'
-    #     df_bgc['Class'] = None
-    #     BMF1_DAYS = 9999
-    #     BMF2_DAYS = 9999
-    #     BMF3_DAYS = 9999
-    #
-    #     # PTAX, TOMPTAX, BMF
-    #     for index, row in df_bgc.iterrows():
-    #         CLASS_STATUS = None
-    #         description = row['Description']
-    #         # #print(description)
-    #         try:
-    #             BRL = re.search(".*USDBRL NDF.*", description)
-    #         except:
-    #             continue
-    #         if BRL:
-    #             # #print(row['Description'])
-    #
-    #             BMF = re.search(".*BMF.*", description)
-    #             # BMF3 ?
-    #
-    #             if BMF:
-    #                 CLASS_STATUS = "BMF"
-    #                 # BMF2 (2ND)
-    #
-    #             # #BMF3 (3RD)
-    #             # elif BMF3:
-    #             #     CLASS_STATUS="BMF3"
-    #
-    #         if CLASS_STATUS:
-    #             df_bgc.at[index, "Class"] = CLASS_STATUS
-    #
-    #             # print('CLASS: ', df_bgc.at[index, "Class"])
-    #
-    #     # Resto BROKEN
-    #     for index, row in df_bgc.iterrows():
-    #         description = row['Description']
-    #         BRL = re.search(".*BRL NDF.*", description)
-    #         if BRL:
-    #             CLASS_STATUS = None
-    #             BMF2 = re.search(".*BMF ROLL.*", description)
-    #
-    #             # print('CLASS: ', df_bgc.at[index, "Class"])
-    #             if BMF2:
-    #                 CLASS_STATUS = "BMF2"
-    #                 df_bgc.at[index, "Class"] = CLASS_STATUS
-    #
-    #                 # RESTO
-    #             elif not df_bgc.at[index, "Class"]:
-    #                 CLASS_STATUS = "BROKEN"
-    #                 df_bgc.at[index, "Class"] = CLASS_STATUS
-    #
-    #             # %%
-    #     #####################
-    #     # NUMBERS FOR HUMAN
-    #     df_bgc_summary = df_bgc.groupby('Class').sum()
-    #
-    #     logger.debug(df_bgc.columns)
-    #     number_to_human = []
-    #     if not df_bgc.groupby('Class').sum().empty:
-    #         for number in df_bgc.groupby('Class').sum()['Volume']:
-    #             converted = numerize.numerize(number)
-    #             number_to_human.append(converted)
-    #
-    #         df_bgc_summary['Total for human'] = number_to_human
-    #
-    #         #####################
-    #         # DATAFRAME SORT
-    #         df_bgc_summary = df_bgc_summary[['Total for human', 'Volume']]
-    #
-    #     logger.debug(f'df_bgc_summary ===>\n{df_bgc_summary}\n')
-    #     if presentation == 'raw':
-    #         return df_bgc
-    #     else:
-    #         return df_bgc_summary

@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 import holidays
 import os
 from pandas._libs.tslibs.offsets import BDay, BMonthEnd
+from dateutil.relativedelta import relativedelta
 
 
 def is_weekday(date):
@@ -74,34 +75,19 @@ def get_last_business_day(test_date=None):
 # BMF
 # É o segundo dia util do mes seguinte. Feriados Brasileiros OU americanos não é dia util.
 # Quando dizemos BMF sempre quer dizer do mes seguinte, BMF2, BMF3, BMF4... é referente aos meses subsequentes
-def get_BMF_date(month=None, year=None):
-    BMF_date = datetime.today()
-    BMF_date = (BMF_date.replace(day=1) + timedelta(days=32)).replace(day=1)
+def get_BMF_date(date=None):
+    if not date:
+        vdate = datetime.today()
+        if vdate.day > get_second_business_day(vdate.month, vdate.year).day:
+            vdate = vdate + relativedelta(months=+1)
+    else:
+        vdate = date
+        BMF_date = get_second_business_day(vdate.month, vdate.year)
+        if vdate.day > BMF_date.day:
+            vdate = vdate + relativedelta(months=+1)
+            BMF_date = get_second_business_day(vdate.month, vdate.year)
 
-    if month:
-        BMF_date = BMF_date.replace(month=month)
-
-    if year:
-        BMF_date = BMF_date.replace(year=year)
-    # 1st BD: dt + BusinessDay()
-    # 2nd BD: dt + 2 * BusinessDay()
-    # 3rd BD: dt + 3 * BusinessDay()
-
-    # #print(f'BMF calculated {BMF_date.date()}')
-    # BMF_date = BMF_date + 2 * BusinessDay()
-    # BMF_date = BMF_date + timedelta(days=1)
-    count = 1
-    while (not is_weekday(BMF_date) or is_holiday(BMF_date)) or count < 2:
-        BMF_date = BMF_date + timedelta(days=1)
-        count += 1
-    # #print(f'BMF after weekday {BMF_date.date()}')
-
-    # while is_holiday(BMF_date):
-    #     #print(f"{BMF_date.date()} is holiday")
-    #     #BMF_date = BMF_date + 1 * BusinessDay()
-    #     BMF_date = BMF_date + timedelta(days=1)
-
-    # #print(f'BMF after holiday {BMF_date.date()}')
+    BMF_date = get_second_business_day(vdate.month, vdate.year)
     return BMF_date
 
 
@@ -120,13 +106,18 @@ get_last_bd = lambda date: date.replace(day=1) + BMonthEnd()
 def get_second_business_day(month=None, year=None):
     month = int(month) if month else None
     year = int(year) if year else None
+    today = datetime.today()
     bdate = None
     if year:
-        bdate = datetime.today().replace(year=year, month=month, day=1)
+        # bdate = datetime.strptime(f'{year}{month}01', '%Y%m%d')
+        bdate = today.replace(year=year, month=month, day=1)
     elif month and not year:
-        bdate = datetime.today().replace(month=month, day=1)
+        # bdate = datetime.strptime(f'{today.year}{month}01', '%Y%m%d')
+        bdate = today.replace(month=month, day=1)
     else:
-        bdate = datetime.today().replace(day=1)
+        # bdate = datetime.strptime(f'{today.year}{today.month}01', '%Y%m%d')
+        bdate = today + timedelta(days=+28)
+        bdate = bdate.replace(day=1)
 
     # print(bdate)
     if is_weekday(bdate):
@@ -139,6 +130,9 @@ def get_second_business_day(month=None, year=None):
 
     while is_holiday(bdate):
         bdate = bdate + BDay(1)
+
+    bdate = datetime.fromtimestamp(datetime.timestamp(bdate))
+    bdate = datetime(bdate.year, bdate.month, bdate.day)
 
     return bdate
 
