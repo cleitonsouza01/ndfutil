@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.0.1'
+VERSION = '0.0.2'
 DESCRIPTION = 'NDF finance tools'
 LONG_DESCRIPTION = 'This is a finance package to help download and calculate NDF (Non-Deliverable Forward) information'
 
@@ -22,7 +22,8 @@ setup(
          'pandas~=1.5.3',
          'xlrd~=2.0.1',
          'Scrapy~=2.8.0',
-         'numerize~=0.12'],  # add any additional packages that
+         'numerize~=0.12',
+        'matplotlib==3.7.1'],  # add any additional packages that
 
     keywords=['python', 'finance', 'ndf', 'ndfutil', 'Non Deliverable Forward'],
     classifiers=[
