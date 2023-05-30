@@ -592,10 +592,11 @@ class datamining:
     ##########################################
     # MARKET SUMMARY
     def market_summary(self):
-        tulletprebon = self.tulletprebon_calcs()
-        tradition = self.tradition_calcs()
-        gfi = self.gfi_calcs()
-        bgc = self.bgc_calcs()
+        df = pandas.DataFrame({'Class': ['TOTAL'], 'Total for human': [0], 'Volume': [0]}).set_index('Class')
+        tulletprebon = self.tulletprebon_calcs() if isinstance(self.tulletprebon_calcs(), pandas.DataFrame) else df
+        tradition = self.tradition_calcs() if isinstance(self.tradition_calcs(), pandas.DataFrame) else df
+        gfi = self.gfi_calcs() if isinstance(self.gfi_calcs(), pandas.DataFrame) else df
+        bgc = self.bgc_calcs() if isinstance(self.bgc_calcs(), pandas.DataFrame) else df
 
         tulletprebon['source'] = 'TulletPrebon'
         tradition['source'] = 'Tradition'
