@@ -57,7 +57,7 @@ class datamining:
         df_tradition = df_tradition.rename(columns={'Total_Notional_USD_DA': 'Volume'})
 
         # TYPES CONVERTION
-        df_tradition = df_tradition.astype({'Volume': 'float'})
+        df_tradition = df_tradition.astype({'Volume': 'int'})
 
         # ##print('df describe\n', df_tradition.describe())
 
@@ -161,7 +161,7 @@ class datamining:
 
         #####################
         # DATAFRAME SORT
-        df_tradition_summary = df_tradition_summary[['Total for human', 'Total_Trade_Count']]
+        df_tradition_summary = df_tradition_summary[['Total for human', 'Volume']]
 
         logger.debug(f'TRADITION Summary ===>\n{df_tradition_summary}\n')
         if presentation == 'raw':
@@ -201,7 +201,7 @@ class datamining:
         # TYPES CONVERTION
         df = df.astype({'Opening Price': 'float', 'Trade High': 'float',
                         'Trade Low': 'float', 'Closing Price': 'float',
-                        'Num of Trades': 'int', 'Total Notional Value': 'float'})
+                        'Num of Trades': 'int', 'Total Notional Value': 'int'})
 
         #####################
         # DATAFRAME SORT
@@ -335,6 +335,8 @@ class datamining:
         df['Total for human'] = number_to_human
 
         df_summary = df.groupby('Class').sum()
+        # df.drop(columns=['Num of Trades', 'Days'], inplace=True)
+
 
         number_to_human = []
         for number in df.groupby('Class').sum()['Total Notional Value']:
@@ -345,9 +347,11 @@ class datamining:
 
         #####################
         # DATAFRAME SORT
-        df_summary.drop(["Opening Price", "Trade Low", "Trade High", "Closing Price"], axis=1, inplace=True)
+        df_summary.drop(columns=["Opening Price", "Trade Low", "Trade High",
+                                 "Closing Price", 'Num of Trades', 'Days'], inplace=True)
         # list(df.columns.values)
-        df_summary = df_summary[['Total for human', 'Num of Trades', 'Days', 'Total Notional Value']]
+        df_summary = df_summary[['Total for human', 'Total Notional Value']]
+        df_summary.rename(columns={'Total Notional Value': 'Volume'}, inplace=True)
 
         logger.debug(f'TULLETPREBON Summary ===>\n{df_summary}\n')
         if presentation == 'raw':
@@ -535,7 +539,7 @@ class datamining:
                 # BMF
                 if row_date == get_last_bd(row_date):
                     # BMF 1
-                    print(f'{row_date.month} == {today.month}  |  {row_date} | {description}')
+                    # print(f'{row_date.month} == {today.month}  |  {row_date} | {description}')
                     if row_date.month == today.month:
                         CLASS_STATUS = "BMF"
                     elif row_date.month == today.month + 1:
