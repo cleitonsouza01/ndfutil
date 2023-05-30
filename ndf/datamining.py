@@ -4,6 +4,7 @@ from pathlib import Path
 
 import joblib
 import pandas
+import matplotlib.pyplot as plt
 from dateutil.relativedelta import relativedelta
 from loguru import logger
 from numerize import numerize
@@ -337,7 +338,6 @@ class datamining:
         df_summary = df.groupby('Class').sum()
         # df.drop(columns=['Num of Trades', 'Days'], inplace=True)
 
-
         number_to_human = []
         for number in df.groupby('Class').sum()['Total Notional Value']:
             converted = numerize.numerize(number)
@@ -473,6 +473,8 @@ class datamining:
         else:
             return df_summary
 
+    ##########################################
+    # BGC CALCS
     def bgc_calcs(self, date=None, presentation=None):
         source = 'bgc'
         logger.info(f'{source} calcs starting')
@@ -586,3 +588,39 @@ class datamining:
             return df
         else:
             return df_summary
+
+    ##########################################
+    # MARKET SUMMARY
+    def market_summary(self):
+        tulletprebon = self.tulletprebon_calcs()
+        tradition = self.tradition_calcs()
+        gfi = self.gfi_calcs()
+        bgc = self.bgc_calcs()
+
+        tulletprebon['source'] = 'TulletPrebon'
+        tradition['source'] = 'Tradition'
+        bgc['source'] = 'bgc'
+        gfi['source'] = 'gfi'
+
+        df_result = pandas.concat([tulletprebon, tradition, bgc, gfi])
+        df_totals = df_result.query('Class == "TOTAL"')
+
+        return df_totals
+
+    ##########################################
+    # TOTAL
+    def market_total(self):
+        df_total = self.market_summary()
+        market_total = df_total.sum()['Volume']
+        market_total = numerize.numerize(float(market_total))
+        return market_total
+
+    def generate_chart(self):
+        market_total = self.market_total()
+        summary = self.market_summary()
+
+        fig = plt.figure(figsize=(5, 6))
+        plt.pie(summary['Volume'], labels=summary['source'], autopct='%1.0f%%')
+        plt.title(f'NDF Market Summary - Total ${market_total}')
+        plt.savefig('pie.png', dpi=fig.dpi, bbox_inches='tight')
+        return True
