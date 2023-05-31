@@ -202,7 +202,7 @@ class datamining:
         # TYPES CONVERTION
         df = df.astype({'Opening Price': 'float', 'Trade High': 'float',
                         'Trade Low': 'float', 'Closing Price': 'float',
-                        'Num of Trades': 'int', 'Total Notional Value': 'int'})
+                        'Num of Trades': 'int', 'Total Notional Value': 'int64'})
 
         #####################
         # DATAFRAME SORT
@@ -620,11 +620,21 @@ class datamining:
         market_total = self.market_total()
         summary = self.market_summary()
 
+        # Labels prepare
+        labels = summary[['source', 'Total for human']]
+        labels = labels.values.tolist()
+        labels_chart = []
+        for item in labels:
+            labels_chart.append(f'{item[0]} ${item[1]}')
+
+        font1 = {'family': 'serif', 'color': 'blue', 'size': 18}
         colors = ['#045ca3', '#f5b12b', '#d11e20', '#8ec5f2']
         fig = plt.figure(figsize=(5, 6))
-        plt.pie(summary['Volume'], labels=summary['source'], labeldistance=1.15, autopct='%1.0f%%',
+        plt.pie(summary['Volume'], labels=labels_chart, labeldistance=1.15, autopct='%1.0f%%',
                 wedgeprops={'linewidth': 3, 'edgecolor': 'white'}, colors=colors,
                 textprops={'fontsize': 14})
-        plt.title(f'NDF Market Summary - Total ${market_total}')
+        plt.legend(labels_chart, loc='lower left', bbox_to_anchor=(-0.35, .5), fontsize=10)
+        plt.title(f'NDF Market Summary\n Total ${market_total}', fontdict=font1)
         plt.savefig('pie.png', dpi=fig.dpi, bbox_inches='tight')
+
         return True
