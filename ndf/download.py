@@ -1,5 +1,6 @@
 # NDF download manager
 import pathlib
+import time
 from datetime import date, datetime, timedelta
 import os
 import sys
@@ -24,9 +25,26 @@ class download:
         self.TRADITION_result = None
         self.TULLETPREBON_result = None
         self.GFI_result = None
+        self.MAX_RETRIES = 6
+        self.TIME_TO_WAIT = 10
+        self.FILE_SIZE_MIN = 2000
+        self.df_empty = pandas.DataFrame({'Class': ['TOTAL'], 'Total for human': [0], 'Volume': [0]}).set_index('Class')
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_5) AppleWebKit/537.36 (KHTML, like Gecko) '
                           'Chrome/50.0.2661.102 Safari/537.36'}
+
+    def download_manager(self, url):
+        r = None
+        logger.info(f'Settings: MAX_RETRIES:{self.MAX_RETRIES} | TIME_TO_WAIT:{self.TIME_TO_WAIT}')
+        for _ in range(self.MAX_RETRIES):
+            r = requests.get(url, headers=self.headers, verify=False)
+            if r.ok:
+                break
+            else:
+                wait = self.TIME_TO_WAIT * (_ + 1) if _ < 3 else self.TIME_TO_WAIT * (_ * 3)
+                logger.info(f'Download fail, retry in {wait} seconds...')
+                time.sleep(wait)
+        return r
 
     def _download(self, source, url, file_extention, date=None):
         source = source.lower()
@@ -42,15 +60,12 @@ class download:
                     logger.error(f'Impossible to create cache directory {self.data_dir_name}')
                     raise
                 pass
-        # Setup file name
-        # today_date = datetime.now().strftime('%Y-%m-%d')
-        # file = f"{source}_{today_date}.pkl"
-        # cachefile_with_path = os.path.join(self.data_dir_name, file)
         cachefile_with_path = ndf.util.get_cache_filename(source, date)
         cache_raw_file = f"{cachefile_with_path.replace('.pkl', '')}.{file_extention}"
 
         df = None
 
+        # Load cache if exist
         if pathlib.Path(cachefile_with_path).is_file():
             f = open(cachefile_with_path, 'rb')
             df = joblib.load(cachefile_with_path)
@@ -59,40 +74,47 @@ class download:
             try:
                 if file_extention == 'html':
                     logger.info(f'Downloading to {cache_raw_file} from {url}')
-                    r = requests.get(url)
-                    response = TextResponse(r.url, body=r.text, encoding="utf-8")
-                    logger.debug("Convert HTML to pandas dataframe")
-                    table = Table(response.xpath('(//table)[1]'))
-                    tullet = table.as_dicts()
-                    df = pd.DataFrame(tullet)
-                    # Cache
-                    joblib.dump(df, cachefile_with_path)
-                    logger.info(f'{source} data success cached at {cachefile_with_path}')
+                    r = self.download_manager(url)
+                    if r:
+                        response = TextResponse(r.url, body=r.text, encoding="utf-8")
+                        logger.debug("Convert HTML to pandas dataframe")
+                        table = Table(response.xpath('(//table)[1]'))
+                        tullet = table.as_dicts()
+                        df = pd.DataFrame(tullet)
+                        # Cache
+                        joblib.dump(df, cachefile_with_path)
+                        logger.info(f'{source} data success cached at {cachefile_with_path}')
+                    else:
+                        df = self.df_empty
                 else:
                     logger.info(f'Downloading to {cache_raw_file} from {url}')
-                    r = requests.get(url, headers=self.headers, verify=False)
-                    file_size = len(r.content)
-                    logger.info(f'download size: {file_size} ')
-                    if file_size > 2000:
-                        with open(cache_raw_file, 'wb') as f:
-                            f.write(r.content)
+                    r = self.download_manager(url)
+                    if r:
+                        file_size = len(r.content)
+                        logger.info(f'download size: {file_size} ')
+                        if file_size > self.FILE_SIZE_MIN:
+                            with open(cache_raw_file, 'wb') as f:
+                                f.write(r.content)
 
-                        if file_extention == 'csv':
-                            logger.debug("Convert CSV to pandas dataframe")
-                            df = pd.read_csv(cache_raw_file, sep='|')
-                            logger.debug("Creating cache...")
-                            joblib.dump(df, cachefile_with_path)
-                            logger.info(f'{source} data success cached at {cachefile_with_path}')
+                            if file_extention == 'csv':
+                                logger.debug("Convert CSV to pandas dataframe")
+                                df = pd.read_csv(cache_raw_file, sep='|')
+                                logger.debug("Creating cache...")
+                                joblib.dump(df, cachefile_with_path)
+                                logger.info(f'{source} data success cached at {cachefile_with_path}')
 
-                        elif file_extention == 'xls':
-                            logger.debug("Convert XLS to pandas dataframe")
-                            df = pd.read_excel(cache_raw_file)
-                            logger.debug("Creating cache...")
-                            joblib.dump(df, cachefile_with_path)
-                            logger.info(f'{source} data success cached at {cachefile_with_path}')
+                            elif file_extention == 'xls':
+                                logger.debug("Convert XLS to pandas dataframe")
+                                df = pd.read_excel(cache_raw_file)
+                                logger.debug("Creating cache...")
+                                joblib.dump(df, cachefile_with_path)
+                                logger.info(f'{source} data success cached at {cachefile_with_path}')
+                        else:
+                            logger.info("File size too small, ignoring and returning false")
+                            df = self.df_empty
                     else:
-                        logger.debug("File size too small, ignoring and returning false")
-                        df = None
+                        logger.info("Download failed")
+                        df = self.df_empty
             except requests.exceptions.RequestException as e:
                 logger.error(e)
 
@@ -100,12 +122,16 @@ class download:
 
     def download(self, source, date=None):
         if source == "tradition":
+            logger.info(f'Start download {source.upper()} >>>')
             return self.download_tradition(date)
         elif source == "bgc":
+            logger.info(f'Start download {source.upper()} >>>')
             return self.download_bgc(date)
         elif source == "tulletprebon":
+            logger.info(f'Start download {source.upper()} >>>')
             return self.download_prebontullet(date)
         elif source == "gfi":
+            logger.info(f'Start download {source.upper()} >>>')
             return self.download_gfi(date)
 
     def download_tradition(self, date=None):
