@@ -53,6 +53,8 @@ class download:
         source = source.lower()
         # If not have cache directory create one
         logger.debug(f'Try download {source} from {url}')
+
+        # Check if DATA directory exist
         if not os.path.isdir(self.data_dir_name):
             import errno
             try:
@@ -78,6 +80,7 @@ class download:
                 logger.info(f'Downloading to {cache_raw_file} from {url}')
                 r = self.download_manager(url)
                 if r:
+                    logger.info(f'{source.upper()} - Download OK')
                     response = TextResponse(r.url, body=r.text, encoding="utf-8")
                     logger.debug("Convert HTML to pandas dataframe")
                     table = Table(response.xpath('(//table)[1]'))
@@ -92,6 +95,7 @@ class download:
                 logger.info(f'Downloading to {cache_raw_file} from {url}')
                 r = self.download_manager(url)
                 if r:
+                    logger.info(f'{source.upper()} - Download OK')
                     file_size = len(r.content)
                     logger.info(f'download size: {file_size} ')
                     if file_size > self.FILE_SIZE_MIN:
