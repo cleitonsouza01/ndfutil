@@ -38,8 +38,11 @@ class download:
         r = None
         logger.info(f'Download settings: MAX_RETRIES:{self.MAX_RETRIES} | TIME_TO_WAIT:{self.TIME_TO_WAIT}')
         for _ in range(self.MAX_RETRIES):
-            r = requests.get(url, headers=self.headers, verify=False)
-            if r.ok:
+            try:
+                r = requests.get(url, headers=self.headers, verify=False)
+            except requests.exceptions.RequestException as e:
+                logger.error(f'Download error: {e}')
+            if r:
                 logger.info(f'Download Ok')
                 break
             else:
