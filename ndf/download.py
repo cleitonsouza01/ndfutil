@@ -35,10 +35,11 @@ class download:
 
     def download_manager(self, url):
         r = None
-        logger.info(f'Settings: MAX_RETRIES:{self.MAX_RETRIES} | TIME_TO_WAIT:{self.TIME_TO_WAIT}')
+        logger.info(f'Download settings: MAX_RETRIES:{self.MAX_RETRIES} | TIME_TO_WAIT:{self.TIME_TO_WAIT}')
         for _ in range(self.MAX_RETRIES):
             r = requests.get(url, headers=self.headers, verify=False)
             if r.ok:
+                logger.info(f'Download Ok')
                 break
             else:
                 wait = self.TIME_TO_WAIT * (_ + 1) if _ < 3 else self.TIME_TO_WAIT * (_ * 3)
@@ -47,6 +48,7 @@ class download:
         return r
 
     def _download(self, source, url, file_extention, date=None):
+        logger.info(f'{source.upper()} - Download start >>>')
         source = source.lower()
         # If not have cache directory create one
         logger.debug(f'Try download {source} from {url}')
@@ -122,16 +124,12 @@ class download:
 
     def download(self, source, date=None):
         if source == "tradition":
-            logger.info(f'Start download {source.upper()} >>>')
             return self.download_tradition(date)
         elif source == "bgc":
-            logger.info(f'Start download {source.upper()} >>>')
             return self.download_bgc(date)
         elif source == "tulletprebon":
-            logger.info(f'Start download {source.upper()} >>>')
             return self.download_prebontullet(date)
         elif source == "gfi":
-            logger.info(f'Start download {source.upper()} >>>')
             return self.download_gfi(date)
 
     def download_tradition(self, date=None):
