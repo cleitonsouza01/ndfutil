@@ -200,9 +200,10 @@ class datamining:
             return None
 
         # TYPES CONVERTION
+        logger.debug(df)
         df = df.astype({'Opening Price': 'float', 'Trade High': 'float',
                         'Trade Low': 'float', 'Closing Price': 'float',
-                        'Num of Trades': 'int', 'Total Notional Value': 'int64'})
+                        'Num of Trades': 'int64', 'Total Notional Value': 'float'})
 
         #####################
         # DATAFRAME SORT
