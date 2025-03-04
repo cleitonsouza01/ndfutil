@@ -173,7 +173,7 @@ class download:
                 bgc_date_format = bgc_date_format.strftime('%Y%m%d')
 
         # URL_BGC = f"http://dailyactprod.bgcsef.com/SEF/DailyAct/DailyAct_{bgc_date_format}-001.xls"
-        URL_BGC = f"http://dailyactprod.bgcsef.com/SEF/DailyAct/DailyAct_{bgc_date_format}.xls"
+        URL_BGC = f"http://dailyactprod.bgcsef.com/SEF/DailyAct/DailyAct_{bgc_date_format}.xlsx"
 
         df = self._download('BGC', URL_BGC, 'xls', date)
 
