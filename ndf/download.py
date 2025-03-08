@@ -113,7 +113,7 @@ class download:
                             logger.info(f'{source} data success cached at {cachefile_with_path}')
 
                         elif file_extention == 'xls' or file_extention == 'xlsx':
-                            logger.debug("Convert XLS to pandas dataframe")
+                            logger.debug(f"Convert {file_extention.upper()} to pandas dataframe")
                             df = pd.read_excel(cache_raw_file)
                             logger.debug("Creating cache...")
                             joblib.dump(df, cachefile_with_path)
