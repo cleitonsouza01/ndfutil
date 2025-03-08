@@ -378,14 +378,33 @@ class datamining:
         if df.empty:
             logger.info('GFI FILE EMPTY ***')
             return None
-        df.drop('Unnamed: 0', axis=1, inplace=True)
-        df.drop([0, 1, 2], axis=0, inplace=True)
-        df.reset_index(drop=True, inplace=True)
-        df.columns = df.iloc[0]
-        df.reset_index(drop=True, inplace=True)
-        df = df.rename(columns={'Contract Description': 'Description'})
-        df.drop(['Asset Class', 'Open', 'Low', 'High', 'Close', 'Block', 'Currency'], axis=1, inplace=True)
-        df = df[df['Volume'].notna()]
+
+        if 'Unnamed: 0' in df.columns:  # Old format
+            df.drop('Unnamed: 0', axis=1, inplace=True)
+            df.drop([0, 1, 2], axis=0, inplace=True)
+            df.reset_index(drop=True, inplace=True)
+            df.columns = df.iloc[0]
+            df.reset_index(drop=True, inplace=True)
+            df = df.rename(columns={'Contract Description': 'Description'})
+            df.drop(['Asset Class', 'Open', 'Low', 'High', 'Close', 'Block', 'Currency'], axis=1, inplace=True)
+            df = df[df['Volume'].notna()]
+        else:  # New format
+            df.drop([0], axis=0, inplace=True)
+            df.reset_index(drop=True, inplace=True)
+            df.columns = df.iloc[0]
+            df.reset_index(drop=True, inplace=True)
+            df = df.rename(columns={'InstrumentDescription': 'Description'})
+            df.drop(['Asset Class', 'Open', 'Low', 'High', 'Close', 'Block', 'Currency'], axis=1, inplace=True)
+            df = df[df['Volume'].notna()]
+
+        # df.drop('Unnamed: 0', axis=1, inplace=True)
+        # df.drop([0, 1, 2], axis=0, inplace=True)
+        # df.reset_index(drop=True, inplace=True)
+        # df.columns = df.iloc[0]
+        # df.reset_index(drop=True, inplace=True)
+        # df = df.rename(columns={'Contract Description': 'Description'})
+        # df.drop(['Asset Class', 'Open', 'Low', 'High', 'Close', 'Block', 'Currency'], axis=1, inplace=True)
+        # df = df[df['Volume'].notna()]
 
         # df.drop([0], axis=0, inplace=True)
         # df = df.rename(columns={'Instrument Description': 'Description'})
@@ -492,14 +511,24 @@ class datamining:
         if df.empty:
             logger.info('BGC FILE EMPTY ***')
             return None
-        df.drop('Unnamed: 0', axis=1, inplace=True)
-        df.drop([0, 1, 2], axis=0, inplace=True)
-        df.reset_index(drop=True, inplace=True)
-        df.columns = df.iloc[0]
-        df.reset_index(drop=True, inplace=True)
-        df = df.rename(columns={'Contract Description': 'Description'})
-        df.drop(['Asset Class', 'Open', 'Low', 'High', 'Close', 'Block', 'Currency'], axis=1, inplace=True)
-        df = df[df['Volume'].notna()]
+
+        if 'Unnamed: 0' in df.columns:  # Old format
+            df.drop('Unnamed: 0', axis=1, inplace=True)
+            df.drop([0, 1, 2], axis=0, inplace=True)
+            df.reset_index(drop=True, inplace=True)
+            df.columns = df.iloc[0]
+            df.reset_index(drop=True, inplace=True)
+            df = df.rename(columns={'Contract Description': 'Description'})
+            df.drop(['Asset Class', 'Open', 'Low', 'High', 'Close', 'Block', 'Currency'], axis=1, inplace=True)
+            df = df[df['Volume'].notna()]
+        else:  # New format
+            df.drop([0], axis=0, inplace=True)
+            df.reset_index(drop=True, inplace=True)
+            df.columns = df.iloc[0]
+            df.reset_index(drop=True, inplace=True)
+            df = df.rename(columns={'Contract Description': 'Description'})
+            df.drop(['Asset Class', 'Open', 'Low', 'High', 'Close', 'Block', 'Currency'], axis=1, inplace=True)
+            df = df[df['Volume'].notna()]
 
         # df.drop([0], axis=0, inplace=True)
         # print(df.columns)

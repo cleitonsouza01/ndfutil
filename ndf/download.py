@@ -112,7 +112,7 @@ class download:
                             joblib.dump(df, cachefile_with_path)
                             logger.info(f'{source} data success cached at {cachefile_with_path}')
 
-                        elif file_extention == 'xls':
+                        elif file_extention == 'xls' or file_extention == 'xlsx':
                             logger.debug("Convert XLS to pandas dataframe")
                             df = pd.read_excel(cache_raw_file)
                             logger.debug("Creating cache...")
@@ -122,7 +122,7 @@ class download:
                         logger.info("File size too small, ignoring and returning false")
                         df = self.df_empty
                 else:
-                    logger.info("Download failed")
+                    logger.error("Download failed")
                     df = self.df_empty
         return df
 
@@ -173,9 +173,10 @@ class download:
                 bgc_date_format = bgc_date_format.strftime('%Y%m%d')
 
         # URL_BGC = f"http://dailyactprod.bgcsef.com/SEF/DailyAct/DailyAct_{bgc_date_format}-001.xls"
+                  # http://dailyactprod.bgcsef.com/SEF/DailyAct/DailyAct_20250306.xlsx
         URL_BGC = f"http://dailyactprod.bgcsef.com/SEF/DailyAct/DailyAct_{bgc_date_format}.xlsx"
 
-        df = self._download('BGC', URL_BGC, 'xls', date)
+        df = self._download('BGC', URL_BGC, 'xlsx', date)
 
         if isinstance(df, pd.DataFrame):
             return True
@@ -209,7 +210,9 @@ class download:
             gfi_date_format = gfi_date_format.strftime(date_format)
 
         # "http://www.gfigroup.com/doc/sef/marketdata/2023-01-20_daily_trade_data.xls"
-        URL_GFI = f"http://www.gfigroup.com/doc/sef/marketdata/{gfi_date_format}_daily_trade_data.xls"
+        # URL_GFI = f"https://www.gfigroup.com/doc/sef/marketdata/{gfi_date_format}_daily_trade_data.xls"
+        # URL_GFI = f"https://www.gfigroup.com/doc/sef/marketdata/2025-03-06_daily_trade_data.xlsx"
+        URL_GFI = f"https://www.gfigroup.com/doc/sef/marketdata/{gfi_date_format}_daily_trade_data.xlsx"
 
         df = self._download('GFI', URL_GFI, 'xls', date)
 
