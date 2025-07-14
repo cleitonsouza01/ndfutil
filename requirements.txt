@@ -8,3 +8,6 @@ Scrapy~=2.8.0
 matplotlib==3.7.1
 numerize~=0.12
 openpyxl==3.1.5
+cloudscraper==1.2.71
+undetected-chromedriver==3.5.5
+playwright==1.53.0

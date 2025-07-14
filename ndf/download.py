@@ -1,6 +1,7 @@
 # NDF download manager
 import pathlib
 import time
+import random
 from datetime import date, datetime, timedelta
 import os
 import sys
@@ -11,6 +12,15 @@ import joblib
 import requests as requests
 from loguru import logger
 import urllib3
+import concurrent.futures
+
+# Optional: cloudscraper for Cloudflare bypass
+try:
+    import cloudscraper
+    CLOUDSCRAPER_AVAILABLE = True
+except ImportError:
+    CLOUDSCRAPER_AVAILABLE = False
+    logger.warning("cloudscraper not available. Install with: pip install cloudscraper")
 
 import ndf.util
 from ndf.table import Table
@@ -79,11 +89,26 @@ class download:
         self.TIME_TO_WAIT = 10
         self.FILE_SIZE_MIN = 2000
         self.df_empty = pandas.DataFrame({'Class': ['TOTAL'], 'Total for human': [0], 'Volume': [0]}).set_index('Class')
+        
+        # Create a session for persistent connections and cookies
+        self.session = requests.Session()
+        
+        # Create cloudscraper session if available
+        if CLOUDSCRAPER_AVAILABLE:
+            self.cloudscraper_session = cloudscraper.create_scraper(
+                browser={
+                    'browser': 'chrome',
+                    'platform': 'darwin',
+                    'desktop': True
+                }
+            )
+        else:
+            self.cloudscraper_session = None
+        
         self.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                          'Chrome/122.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.5',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            'Accept-Language': 'en-US,en;q=0.9',
             'Accept-Encoding': 'gzip, deflate, br',
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
@@ -91,7 +116,16 @@ class download:
             'Sec-Fetch-Mode': 'navigate',
             'Sec-Fetch-Site': 'none',
             'Sec-Fetch-User': '?1',
-            'Cache-Control': 'max-age=0'}
+            'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+            'Sec-Ch-Ua-Mobile': '?0',
+            'Sec-Ch-Ua-Platform': '"macOS"',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+        }
+        
+        # Update session headers
+        self.session.headers.update(self.headers)
+        
         # BGC
         self.bgc_url = bgc_url
         self.bgc_url_base = bgc_url_base
@@ -115,21 +149,43 @@ class download:
         last_error = None
         logger.info(f'Download settings: MAX_RETRIES:{self.MAX_RETRIES} | TIME_TO_WAIT:{self.TIME_TO_WAIT}')
         for attempt in range(self.MAX_RETRIES):
+            # Add random delay to look more human-like
+            if attempt > 0:
+                human_delay = random.uniform(1, 3)
+                logger.info(f'Adding human-like delay: {human_delay:.2f} seconds')
+                time.sleep(human_delay)
+            
             logger.info(f'Download attempt {attempt + 1} trying {url}')
             try:
-                r = requests.get(url, headers=self.headers, verify=False)
-                logger.info(f"HTTP status: {r.status_code if r else 'No response'}")
+                r = self.session.get(url, verify=False)
+                status_code = r.status_code if r else None
+                logger.info(f"HTTP status: {status_code}")
                 if r is not None:
                     logger.info(f"Final URL after redirects: {r.url}")
+                
                 if r and r.status_code == 200:
                     logger.info('Download Ok')
                     return r, None
+                elif r and (r.status_code == 403 or "Just a moment..." in r.text):
+                    # Try advanced Cloudflare bypass
+                    logger.info('Detected Cloudflare challenge, trying advanced bypass...')
+                    r_bypass, bypass_error = self._handle_cloudflare_challenge(url)
+                    if r_bypass:
+                        logger.info('Advanced Cloudflare bypass successful!')
+                        return r_bypass, None
+                    else:
+                        logger.error(f'Advanced Cloudflare bypass failed: {bypass_error}')
                 else:
-                    if r is not None:
-                        logger.error(f"Download failed: HTTP {r.status_code}")
-                        logger.error(f"Response headers: {r.headers}")
-                        logger.error(f"Response content (first 500 chars): {r.text[:500]}")
-                    last_error = f"HTTP {r.status_code}" if r else "No response"
+                    # Debug: why didn't we trigger Cloudflare bypass?
+                    if r:
+                        logger.debug(f"Debug: r exists, status={r.status_code}, has_js_challenge={'Just a moment...' in r.text}")
+                    else:
+                        logger.debug("Debug: r is None")
+                if r is not None:
+                    logger.error(f"Download failed: HTTP {r.status_code}")
+                    logger.error(f"Response headers: {r.headers}")
+                    logger.error(f"Response content (first 500 chars): {r.text[:500]}")
+                last_error = f"HTTP {r.status_code}" if r else "No response"
             except requests.exceptions.RequestException as e:
                 last_error = str(e)
                 logger.error(f'Download error: {e}')
@@ -241,6 +297,83 @@ class download:
         if static_url:
             return static_url
         return f"{base}{date_str}{suffix}"
+    
+    def _handle_cloudflare_challenge(self, url):
+        """
+        Advanced Cloudflare bypass using multiple techniques
+        """
+        logger.info('Attempting advanced Cloudflare bypass...')
+        
+        # Method 1: Try with cloudscraper with different configurations
+        if CLOUDSCRAPER_AVAILABLE:
+            configs = [
+                {'browser': 'chrome', 'platform': 'darwin', 'desktop': True},
+                {'browser': 'chrome', 'platform': 'windows', 'desktop': True},
+                {'browser': 'firefox', 'platform': 'linux', 'desktop': True},
+            ]
+            
+            for config in configs:
+                try:
+                    logger.info(f'Trying cloudscraper with config: {config}')
+                    scraper = cloudscraper.create_scraper(browser=config)
+                    
+                    # Try multiple times with delays for JS challenges
+                    for attempt in range(3):
+                        r = scraper.get(url, verify=False, timeout=30)
+                        if r and r.status_code == 200 and "Just a moment..." not in r.text:
+                            logger.info(f'Success with config: {config} on attempt {attempt + 1}')
+                            return r, None
+                        elif r and "Just a moment..." in r.text:
+                            logger.info(f'Got JS challenge, waiting {5 * (attempt + 1)} seconds...')
+                            time.sleep(5 * (attempt + 1))
+                        else:
+                            logger.warning(f'Config {config} attempt {attempt + 1} failed with status: {r.status_code if r else "No response"}')
+                            
+                except Exception as e:
+                    logger.error(f'Config {config} error: {e}')
+                    
+                # Wait between configurations
+                time.sleep(random.uniform(3, 7))
+        
+        # Method 2: Try with different user agents manually
+        user_agents = [
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        ]
+        
+        for ua in user_agents:
+            try:
+                logger.info(f'Trying with User-Agent: {ua[:50]}...')
+                session = requests.Session()
+                session.headers.update({
+                    'User-Agent': ua,
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Accept-Encoding': 'gzip, deflate',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                })
+                
+                # Try multiple times for JS challenges
+                for attempt in range(2):
+                    r = session.get(url, verify=False, timeout=30)
+                    if r and r.status_code == 200 and "Just a moment..." not in r.text:
+                        logger.info(f'Success with User-Agent: {ua[:50]}... on attempt {attempt + 1}')
+                        return r, None
+                    elif r and "Just a moment..." in r.text:
+                        logger.info(f'Got JS challenge with UA, waiting {3 * (attempt + 1)} seconds...')
+                        time.sleep(3 * (attempt + 1))
+                    else:
+                        logger.warning(f'User-Agent attempt {attempt + 1} failed with status: {r.status_code if r else "No response"}')
+                        
+            except Exception as e:
+                logger.error(f'User-Agent {ua[:50]}... error: {e}')
+                
+            # Wait between user agents
+            time.sleep(random.uniform(2, 4))
+        
+        return None, "All Cloudflare bypass methods failed"
 
     def download_tradition(self, date=None):
         date_format = '%Y-%m-%d'
@@ -300,11 +433,23 @@ class download:
         return True, None
 
     def download_all(self):
-        bgc, bgc_err = self.download_bgc()
-        tradition, tradition_err = self.download_tradition()
-        prebontullet, prebontullet_err = self.download_prebontullet()
-        gfi, gfi_err = self.download_gfi()
-        print('bgc ok') if bgc else print(f'bgc erro: {bgc_err}')
-        print('tradition ok') if tradition else print(f'tradition erro: {tradition_err}')
-        print('prebontullet ok') if prebontullet else print(f'prebontullet erro: {prebontullet_err}')
-        print('gfi ok') if gfi else print(f'gfi erro: {gfi_err}')
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            future_to_source = {
+                executor.submit(self.download_bgc): 'bgc',
+                executor.submit(self.download_tradition): 'tradition',
+                executor.submit(self.download_prebontullet): 'prebontullet',
+                executor.submit(self.download_gfi): 'gfi'
+            }
+            results = {}
+            for future in concurrent.futures.as_completed(future_to_source):
+                source = future_to_source[future]
+                try:
+                    result, error = future.result()
+                    results[source] = (result, error)
+                except Exception as exc:
+                    results[source] = (False, str(exc))
+
+        print('bgc ok') if results['bgc'][0] else print(f'bgc erro: {results["bgc"][1]}')
+        print('tradition ok') if results['tradition'][0] else print(f'tradition erro: {results["tradition"][1]}')
+        print('prebontullet ok') if results['prebontullet'][0] else print(f'prebontullet erro: {results["prebontullet"][1]}')
+        print('gfi ok') if results['gfi'][0] else print(f'gfi erro: {results["gfi"][1]}')
